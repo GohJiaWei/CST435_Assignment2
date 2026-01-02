@@ -19,14 +19,19 @@ def process_single_image(filename):
     output_path = os.path.join(OUTPUT_DIR, filename)
     return filters.process_pipeline(input_path, output_path)
 
+import argparse
+
 def main():
+    parser = argparse.ArgumentParser(description="Image processing using concurrent threads.")
+    parser.add_argument("--workers", type=int, default=None, help="Number of worker threads.")
+    args = parser.parse_args()
+
     if not os.path.exists(INPUT_DIR):
         print(f"Input directory {INPUT_DIR} not found.")
         return
 
     # Clean up output directory
     if os.path.exists(OUTPUT_DIR):
-        print(f"Cleaning up existing output directory: {OUTPUT_DIR}")
         shutil.rmtree(OUTPUT_DIR)
         
     os.makedirs(OUTPUT_DIR)
@@ -37,14 +42,13 @@ def main():
         print("No images found to process.")
         return
 
-    print(f"Starting concurrent.futures processing (Threading) on {len(image_files)} images...")
+    worker_msg = args.workers if args.workers else "default"
+    print(f"Starting concurrent.futures processing (Threading) with {worker_msg} workers on {len(image_files)} images...")
     
     start_time = time.time()
     
     # Use ThreadPoolExecutor for Multi-threading
-    # Note: In Python, CPU-bound tasks like image processing are limited by the GIL when using threads.
-    # This might be slower than Multiprocessing or even Serial execution, but demonstrates the paradigm.
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as executor:
         # submit tasks
         futures = {executor.submit(process_single_image, filename): filename for filename in image_files}
         

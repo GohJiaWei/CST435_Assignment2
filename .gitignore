@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+
+# Ignore image folder contents but keep the folder (via .gitkeep)
+input_images/*
+!input_images/.gitkeep
+
+output_multiprocessing/*
+!output_multiprocessing/.gitkeep
+
+output_concurrent/*
+!output_concurrent/.gitkeep

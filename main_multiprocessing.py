@@ -15,14 +15,21 @@ def process_image_task(args):
     input_path, output_path = args
     return filters.process_pipeline(input_path, output_path)
 
+import argparse
+
 def main():
+    parser = argparse.ArgumentParser(description="Image processing using multiprocessing.")
+    parser.add_argument("--workers", type=int, default=multiprocessing.cpu_count(), help="Number of worker processes.")
+    args = parser.parse_args()
+
     if not os.path.exists(LOCAL_INPUT_DIR := INPUT_DIR): # Use global
         print(f"Input directory {INPUT_DIR} not found.")
         return
 
     # Clean up output directory
     if os.path.exists(OUTPUT_DIR):
-        print(f"Cleaning up existing output directory: {OUTPUT_DIR}")
+        # Only print cleanup message if we are running standalone or verbose
+        # For benchmark noise reduction, we might want to be quieter but distinct folders would be better.
         shutil.rmtree(OUTPUT_DIR)
     
     os.makedirs(OUTPUT_DIR)
@@ -41,12 +48,12 @@ def main():
         output_path = os.path.join(OUTPUT_DIR, filename)
         tasks.append((input_path, output_path))
         
-    print(f"Starting multiprocessing with {multiprocessing.cpu_count()} cores on {len(tasks)} images...")
+    print(f"Starting multiprocessing with {args.workers} cores on {len(tasks)} images...")
     
     start_time = time.time()
     
     # Use Pool to parallelize
-    with multiprocessing.Pool() as pool:
+    with multiprocessing.Pool(processes=args.workers) as pool:
         # starmap is useful for multiple arguments, 
         # but we packed them into a tuple for 'process_image_task' to keep it simple compatible with map
         # Or we can use pool.imap_unordered for potentially better responsiveness

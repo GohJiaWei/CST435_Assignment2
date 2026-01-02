@@ -80,21 +80,21 @@ def process_pipeline(image_path, output_path):
         if img is None:
             print(f"Failed to load image: {image_path}")
             return None
-            
-        # 1. Brightness Adjustment
-        img = adjust_brightness(img, factor=1.2)
         
+        # 1. Grayscale Conversion
+        img = to_grayscale(img)
+
         # 2. Gaussian Blur
         img = gaussian_blur(img)
         
-        # 3. Image Sharpening
-        img = sharpen(img)
-        
-        # 4. Grayscale Conversion
-        img = to_grayscale(img)
-        
-        # 5. Edge Detection
+        # 3. Edge Detection
         img = edge_detection(img)
+
+        # 4. Image Sharpening
+        img = sharpen(img)
+
+        # 5. Brightness Adjustment
+        img = adjust_brightness(img, factor=1.2)
         
         save_image(img, output_path)
         
