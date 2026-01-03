@@ -66,22 +66,18 @@ def edge_detection(image):
     grad_y = cv2.filter2D(image, cv2.CV_32F, ky)
     
     # Calculate magnitude
-    # Standard: sqrt(x^2 + y^2)
-    # Approx for speed: |x| + |y|
+    # Strict: sqrt(x^2 + y^2)
+    # Note: filter2D with CV_32F returns float values (can be negative)
+    # Squaring makes them positive.
     
-    # Let's use the magnitude function for better accuracy or simple abs add
-    # Using absolute sum to stay consistent with previous look/feel if desired, 
-    # but strictly "Sobel" often implies magnitude. 
-    # Previous implementation was: addWeighted(abs(x), 0.5, abs(y), 0.5)
+    magnitude = np.sqrt(cv2.pow(grad_x, 2) + cv2.pow(grad_y, 2))
     
-    abs_grad_x = cv2.convertScaleAbs(grad_x)
-    abs_grad_y = cv2.convertScaleAbs(grad_y)
-    
-    return cv2.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
+    # Convert to 8-bit
+    return cv2.convertScaleAbs(magnitude)
 
 def sharpen(image):
     """
-    Enhance edges and details.
+    Enhance edges and details using cv2.filter2D with a manual kernel.
     """
     # Kernel:
     # [ 0, -1,  0]
@@ -91,17 +87,19 @@ def sharpen(image):
         [0, -1, 0],
         [-1, 5, -1],
         [0, -1, 0]
-    ])
+    ], dtype=np.float32)
+    
     return cv2.filter2D(image, -1, kernel)
 
 def adjust_brightness(image, factor=1.2):
     """
-    Increase or decrease image brightness.
-    Wrapper for convertScaleAbs which performs strictly linear transformation.
-    dst = alpha * src + beta
-    We use alpha=factor for scaling pixel values (simulating brightness/contrast adjustment).
+    Increase or decrease image brightness using NumPy.
+    Formula: pixel * factor
     """
-    return cv2.convertScaleAbs(image, alpha=factor, beta=0)
+    # Simply multiply and clip
+    # Use float32 to prevent overflow during calc
+    bright = image.astype(np.float32) * factor
+    return np.clip(bright, 0, 255).astype(np.uint8)
 
 def process_pipeline(image_path, output_path):
     """
