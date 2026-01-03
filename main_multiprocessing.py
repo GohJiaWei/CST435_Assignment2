@@ -28,11 +28,17 @@ def main():
 
     # Clean up output directory
     if os.path.exists(OUTPUT_DIR):
-        # Only print cleanup message if we are running standalone or verbose
-        # For benchmark noise reduction, we might want to be quieter but distinct folders would be better.
-        shutil.rmtree(OUTPUT_DIR)
-    
-    os.makedirs(OUTPUT_DIR)
+        # Delete everything inside EXCEPT .gitkeep
+        for item in os.listdir(OUTPUT_DIR):
+            if item == ".gitkeep":
+                continue
+            item_path = os.path.join(OUTPUT_DIR, item)
+            if os.path.isfile(item_path):
+                os.unlink(item_path)
+            elif os.path.isdir(item_path):
+                shutil.rmtree(item_path)
+    else:
+        os.makedirs(OUTPUT_DIR)
         
     image_files = [f for f in os.listdir(INPUT_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
     
