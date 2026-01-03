@@ -10,40 +10,73 @@ def save_image(image, path):
 
 def to_grayscale(image):
     """
-    Convert BGR image to grayscale.
+    Convert BGR image to grayscale using luminance formula:
+    Y = 0.299*R + 0.587*G + 0.114*B
+    OpenCV uses BGR order.
     """
     if len(image.shape) == 2:
         return image # Already grayscale
-    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+    # Manual implementation using numpy
+    # BGR weights: B=0.114, G=0.587, R=0.299
+    # We use dot product to apply weights to the last axis (channels)
+    grayscale = np.dot(image[..., :3], [0.114, 0.587, 0.299])
+    return grayscale.astype(np.uint8)
 
 def gaussian_blur(image):
     """
-    Apply 3x3 Gaussian kernel for smoothing.
+    Apply 3x3 Gaussian kernel for smoothing manually.
+    Kernel approximation:
+    1 2 1
+    2 4 2
+    1 2 1
+    (Divided by 16)
     """
-    return cv2.GaussianBlur(image, (3, 3), 0)
+    kernel = np.array([
+        [1, 2, 1],
+        [2, 4, 2],
+        [1, 2, 1]
+    ], dtype=np.float32) / 16.0
+    
+    return cv2.filter2D(image, -1, kernel)
 
 def edge_detection(image):
     """
-    Apply Sobel filter to detect edges.
+    Apply Sobel filter to detect edges manually.
+    Input image is expected to be grayscale (from pipeline).
     """
-    # Convert to grayscale if not already
-    if len(image.shape) > 2:
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    else:
-        gray = image
-        
-    # Scale=1, Delta=0, DDepth=CV_64F usually to avoid overflow, then converting back
-    # But for simple visualization, CV_8U is okay or we handle absolute.
-    # Assignment says "Sobel filter", implies directionality or magnitude.
-    # Standard approach: Sobel X + Sobel Y magnitude.
+    # Manual Sobel Kernels
+    # Sobel X
+    kx = np.array([
+        [-1, 0, 1],
+        [-2, 0, 2],
+        [-1, 0, 1]
+    ], dtype=np.float32)
     
-    grad_x = cv2.Sobel(gray, cv2.CV_16S, 1, 0, ksize=3)
-    grad_y = cv2.Sobel(gray, cv2.CV_16S, 0, 1, ksize=3)
+    # Sobel Y
+    ky = np.array([
+        [-1, -2, -1],
+         [0,  0,  0],
+         [1,  2, 1]
+    ], dtype=np.float32)
+    
+    # Apply filters
+    # Use float32 to avoid overflow during calculation
+    grad_x = cv2.filter2D(image, cv2.CV_32F, kx)
+    grad_y = cv2.filter2D(image, cv2.CV_32F, ky)
+    
+    # Calculate magnitude
+    # Standard: sqrt(x^2 + y^2)
+    # Approx for speed: |x| + |y|
+    
+    # Let's use the magnitude function for better accuracy or simple abs add
+    # Using absolute sum to stay consistent with previous look/feel if desired, 
+    # but strictly "Sobel" often implies magnitude. 
+    # Previous implementation was: addWeighted(abs(x), 0.5, abs(y), 0.5)
     
     abs_grad_x = cv2.convertScaleAbs(grad_x)
     abs_grad_y = cv2.convertScaleAbs(grad_y)
     
-    # Combine
     return cv2.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0)
 
 def sharpen(image):
