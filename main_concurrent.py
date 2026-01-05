@@ -5,6 +5,7 @@ import filters
 
 import shutil
 
+# Input and output directories
 INPUT_DIR = "input_images"
 OUTPUT_DIR = "output_concurrent"
 
@@ -22,6 +23,7 @@ def process_single_image(filename):
 import argparse
 
 def main():
+    # Parse command-line arguments for worker configuration
     parser = argparse.ArgumentParser(description="Image processing using concurrent threads.")
     parser.add_argument("--workers", type=int, default=None, help="Number of worker threads.")
     args = parser.parse_args()
@@ -33,6 +35,7 @@ def main():
     # Clean up output directory
     if os.path.exists(OUTPUT_DIR):
         for item in os.listdir(OUTPUT_DIR):
+            # Preserve version control placeholder
             if item == ".gitkeep":
                 continue
             item_path = os.path.join(OUTPUT_DIR, item)
@@ -41,6 +44,7 @@ def main():
             elif os.path.isdir(item_path):
                 shutil.rmtree(item_path)
     else:
+        # Create output directory if missing
         os.makedirs(OUTPUT_DIR)
         
     image_files = [f for f in os.listdir(INPUT_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
@@ -49,9 +53,11 @@ def main():
         print("No images found to process.")
         return
 
+    # Display worker configuration
     worker_msg = args.workers if args.workers else "default"
     print(f"Starting concurrent.futures processing (Threading) with {worker_msg} workers on {len(image_files)} images...")
     
+    # Start timing (includes thread creation and task scheduling)
     start_time = time.time()
     
     # Use ThreadPoolExecutor for Multi-threading
@@ -60,6 +66,7 @@ def main():
         futures = {executor.submit(process_single_image, filename): filename for filename in image_files}
         
         results = []
+        # Collect results as tasks complete
         for future in concurrent.futures.as_completed(futures):
             try:
                 result = future.result()
@@ -67,11 +74,13 @@ def main():
             except Exception as e:
                 print(f"Generated an exception: {e}")
                 
+    # Stop timing
     end_time = time.time()
     duration = end_time - start_time
     
     successful = [r for r in results if r is not None]
     
+    # Benchmark summary
     print(f"Processing complete.")
     print(f"Time taken: {duration:.4f} seconds")
     print(f"Images processed successfully: {len(successful)}/{len(image_files)}")

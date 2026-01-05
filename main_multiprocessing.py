@@ -3,6 +3,7 @@ import time
 import multiprocessing
 import filters
 
+# Input and output directories
 INPUT_DIR = "input_images"
 OUTPUT_DIR = "output_multiprocessing"
 
@@ -18,10 +19,12 @@ def process_image_task(args):
 import argparse
 
 def main():
+    # Parse number of worker processes (default = CPU core count)
     parser = argparse.ArgumentParser(description="Image processing using multiprocessing.")
     parser.add_argument("--workers", type=int, default=multiprocessing.cpu_count(), help="Number of worker processes.")
     args = parser.parse_args()
 
+    # Validate input directory
     if not os.path.exists(LOCAL_INPUT_DIR := INPUT_DIR): # Use global
         print(f"Input directory {INPUT_DIR} not found.")
         return
@@ -30,6 +33,7 @@ def main():
     if os.path.exists(OUTPUT_DIR):
         # Delete everything inside EXCEPT .gitkeep
         for item in os.listdir(OUTPUT_DIR):
+            # Preserve version control placeholder
             if item == ".gitkeep":
                 continue
             item_path = os.path.join(OUTPUT_DIR, item)
@@ -38,6 +42,7 @@ def main():
             elif os.path.isdir(item_path):
                 shutil.rmtree(item_path)
     else:
+        # Create output directory if missing
         os.makedirs(OUTPUT_DIR)
         
     image_files = [f for f in os.listdir(INPUT_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
@@ -56,20 +61,22 @@ def main():
         
     print(f"Starting multiprocessing with {args.workers} cores on {len(tasks)} images...")
     
+    # Start timing (includes process creation and task scheduling)
     start_time = time.time()
     
     # Use Pool to parallelize
     with multiprocessing.Pool(processes=args.workers) as pool:
-        # starmap is useful for multiple arguments, 
-        # but we packed them into a tuple for 'process_image_task' to keep it simple compatible with map
-        # Or we can use pool.imap_unordered for potentially better responsiveness
+        # Pool.map distributes tasks evenly across worker processes
+        # Results are returned in the same order as input tasks
         results = pool.map(process_image_task, tasks)
         
+    # Stop timing
     end_time = time.time()
     duration = end_time - start_time
     
     successful = [r for r in results if r is not None]
     
+    # Benchmark summary
     print(f"Processing complete.")
     print(f"Time taken: {duration:.4f} seconds")
     print(f"Images processed successfully: {len(successful)}/{len(tasks)}")

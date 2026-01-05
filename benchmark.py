@@ -5,6 +5,7 @@ import multiprocessing
 import sys
 
 def parse_time(output):
+    # Extract execution time from script output
     # Look for "Time taken: X seconds"
     match = re.search(r"Time taken:\s+([\d\.]+)\s+seconds", output)
     if match:
@@ -12,6 +13,15 @@ def parse_time(output):
     return None
 
 def run_benchmark(script_name, workers):
+    """
+    Run a benchmark script as a subprocess with a given
+    number of workers (processes or threads).
+
+    Parameters:
+    - script_name: Python script to execute
+    - workers: number of workers to pass as argument
+    """
+    # Build command: python script_name --workers <N>
     cmd = [sys.executable, script_name, "--workers", str(workers)]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -23,14 +33,26 @@ def run_benchmark(script_name, workers):
         return None
 
 def count_images(directory):
+    """
+    Count the number of images in a directory.
+    """
     if not os.path.exists(directory):
         return 0
     return len([f for f in os.listdir(directory) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
 
 def main():
+    """
+    Main function to run the benchmark.
+    Runs both multiprocessing and multithreading scripts
+    using different worker counts and reports:
+    - Execution time
+    - Speedup
+    - Parallel efficiency
+    """
     # Define worker counts to test
     worker_counts = [1, 2, 4, 8, 12]
     
+    # Input dataset directory
     input_dir = "input_images"
     num_images = count_images(input_dir)
     
@@ -40,7 +62,8 @@ def main():
         
     # Get CPU count for reference
     cpu_count = multiprocessing.cpu_count()
-        
+    
+    # List of scripts to benchmark
     scripts = [
         ("Multiprocessing", "main_multiprocessing.py"),
         ("Threading", "main_concurrent.py")
@@ -65,10 +88,12 @@ def main():
                 continue
                 
             if w == 1:
+                # Baseline: no parallelism
                 base_time = time_taken
                 speedup = 1.0
                 efficiency = 1.0
             else:
+                # Compute speedup and efficiency
                 if base_time:
                     speedup = base_time / time_taken
                     efficiency = speedup / w

@@ -5,22 +5,33 @@ import glob
 import random
 import argparse
 
+# Directory where benchmark input images will be stored
 INPUT_DIR = "input_images"
 
 def setup_dataset(target_count):
+    """
+    Prepare a fixed-size subset of the Food-101 dataset.
+
+    This function ensures that INPUT_DIR contains exactly `target_count` images:
+    - Removes excess images if there are too many
+    - Downloads and copies images if there are too few
+    """
+
+    # Create input directory if it does not exist
     if not os.path.exists(INPUT_DIR):
         os.makedirs(INPUT_DIR)
     
     # Check existing images
-    # We look for common image extensions
     existing_images = [f for f in os.listdir(INPUT_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
     current_count = len(existing_images)
     
     print(f"Current image count in '{INPUT_DIR}': {current_count}")
     
+    # Case 1: Too many images → randomly remove excess
     if current_count > target_count:
         excess = current_count - target_count
         print(f"Current count ({current_count}) exceeds target ({target_count}). Removing {excess} images...")
+        # Random removal prevents bias toward any specific image class
         to_remove = random.sample(existing_images, excess)
         for f in to_remove:
             try:
@@ -29,10 +40,13 @@ def setup_dataset(target_count):
                 print(f"Error deleting {f}: {e}")
         print(f"Removed {excess} images. Total in '{INPUT_DIR}': {target_count}")
         return
+    
+    # Case 2: Exact match → no action required
     elif current_count == target_count:
         print(f"Target count of {target_count} already satisfied. No changes needed.")
         return
-
+    
+    # Case 3: Too few images → download from Food-101 dataset
     needed = target_count - current_count
     print(f"Downloading/Locating Food-101 dataset to add {needed} more images...")
     
@@ -50,11 +64,7 @@ def setup_dataset(target_count):
 
     print(f"Found {len(all_images)} images in source dataset.")
     
-    # Simple sampling: we might pick duplicates of what's already there if we aren't careful.
-    # To avoid duplicates effectively without hashing everything:
-    # 1. We rely on random chance (collision unlikely with 100k images vs <1k subset)
-    # 2. But to be safe, we can try to avoid name collisions during copy.
-    
+    # Randomly sample required number of images
     subset = random.sample(all_images, min(needed, len(all_images)))
     
     print(f"Copying {len(subset)} images to {INPUT_DIR}...")
@@ -75,6 +85,7 @@ def setup_dataset(target_count):
     print(f"Added {copied} images. Total in '{INPUT_DIR}': {current_count + copied}")
 
 if __name__ == "__main__":
+    # Command-line interface for dataset setup
     parser = argparse.ArgumentParser(description="Setup Food-101 dataset subset.")
     parser.add_argument("--count", type=int, default=50, help="Total number of images desired in input_images.")
     args = parser.parse_args()
